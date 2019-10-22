@@ -1,73 +1,136 @@
 #include <iostream>
 #include <vector>
-#include <unordered_map>
-#include <algorithm>
 
-class Solution {
+// class Solution
+//{
+// public:
+//  using Adj = std::vector<std::vector<int>>;
+//
+//  std::pair<Adj, std::vector<int>> genAdj(int num_courses, const std::vector<std::vector<int>>& edges)
+//  {
+//    Adj adj(num_courses, std::vector<int>{});
+//    std::vector<int> in_degree(num_courses, 0);
+//
+//
+//    for (const auto& edge : edges)
+//    {
+//      auto to = edge[0];
+//      auto from = edge[1];
+//
+//      adj[from].emplace_back(to);
+//      in_degree[to]++;
+//    }
+//
+//    return {adj, in_degree};
+//  }
+//
+//  bool canFinish(int num_courses, const std::vector<std::vector<int>>& prerequisites)
+//  {
+//    auto [adj, in_degree] = genAdj(num_courses, prerequisites);
+//
+//    int taken_courses = 0;
+//
+//    // Find in_degree zero
+//    std::vector<int> in_degree_zero;
+//    for (int i = 0; i < num_courses; i++)
+//    {
+//      if (in_degree[i] == 0)
+//        in_degree_zero.emplace_back(i);
+//    }
+//
+//    while (!in_degree_zero.empty())
+//    {
+//      int cur_class = in_degree_zero.back();
+//      in_degree_zero.pop_back();
+//      taken_courses++;
+//
+//      for (const auto& to : adj[cur_class])
+//      {
+//        in_degree[to]--;
+//        if (in_degree[to] == 0)
+//        {
+//          in_degree_zero.emplace_back(to);
+//        }
+//      }
+//    }
+//
+//    return taken_courses == num_courses;
+//  }
+//};
+
+class Solution
+{
 public:
-  using AdjList = std::vector<std::vector<int>>;
+  using Adj = std::vector<std::vector<int>>;
 
-  std::pair<AdjList, std::vector<int>> parseEdges(int num_courses, const std::vector<std::vector<int>>& prerequisites)
+  std::pair<Adj, std::vector<int>> genAdj(int num_courses, const std::vector<std::vector<int>>& edges)
   {
-    AdjList adj_list(num_courses, std::vector<int>{});
+    Adj adj(num_courses, std::vector<int>{});
+    std::vector<int> in_degree(num_courses, 0);
 
-    std::vector<bool> no_prereqs(num_courses, true);
 
-    for (const auto& edge : prerequisites)
+    for (const auto& edge : edges)
     {
       auto to = edge[0];
       auto from = edge[1];
-      adj_list[from].emplace_back(to);
-      no_prereqs[to] = false;
+
+      adj[from].emplace_back(to);
+      in_degree[to]++;
     }
 
-    std::vector<int> no_prereq;
-    for (int cls = 0; cls < num_courses; cls++)
-    {
-      if (no_prereqs[cls])
-      {
-        std::cout << cls << " ";
-        no_prereq.emplace_back(cls);
-      }
-    }
-    std::cout << std::endl;
-
-    return {adj_list, no_prereq};
+    return {adj, in_degree};
   }
 
-  bool canFinish(int numCourses, const std::vector<std::vector<int>> &prerequisites) {
-    auto [adj, queue] = parseEdges(numCourses, prerequisites);
+  // Approach: DFS, add node to "stack" to track visited, if we visit a visited node, then return false
+  bool canFinish(int num_courses, const std::vector<std::vector<int>>& prerequisites)
+  {
+    std::vector<bool> visited(num_courses, false);
+    std::vector<bool> rec_stack(num_courses, false);
 
-    if (queue.empty())
+    auto [adj, in_degree] = genAdj(num_courses, prerequisites);
+
+    for (int i = 0; i < num_courses; i++)
     {
-      return false;
-    }
-
-    std::vector<bool> can_take(numCourses, false);
-
-    while (!queue.empty())
-    {
-      std::vector<int> new_queue;
-      for (const auto cls : queue)
+      if (!visited[i])
       {
-        can_take[cls] = true;
-
-        for (const auto next_classes : adj[cls])
+        if (isCyclic(i, visited, rec_stack, adj))
         {
-          if (!can_take[next_classes])
-          {
-            can_take[next_classes] = true;
-            new_queue.emplace_back(next_classes);
-          }
+          return false;
         }
       }
-      queue = std::move(new_queue);
     }
-    return std::find(can_take.begin(), can_take.end(), false) == can_take.end();
+
+    return true;
+  }
+
+private:
+  bool isCyclic(int node, std::vector<bool>& visited, std::vector<bool>& rec_stack, const Adj& adj)
+  {
+    visited[node] = true;
+    rec_stack[node] = true;
+
+    for (const auto to : adj[node])
+    {
+      if (!visited[to])
+      {
+        if (isCyclic(to, visited, rec_stack, adj))
+        {
+          return true;
+        }
+      }
+      else if (rec_stack[to])
+      {
+        return true;
+      }
+    }
+
+    rec_stack[node] = false;
+    return false;
   }
 };
 
-int main() {
+int main()
+{
   Solution solution;
-  std::cout << solution.canFinish(3, {{0, 1}, {1, 2}, {0, 1}});
+  std::cout << solution.canFinish(3, { { 2, 1 }, { 1, 0 }, {0, 2} }) << std::endl;
 }
