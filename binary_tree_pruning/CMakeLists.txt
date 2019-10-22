@@ -1,0 +1,1 @@
+add_executable(binary_tree_pruning binary_tree_pruning.cpp)
